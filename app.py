@@ -7,13 +7,33 @@ from auth import register_user, login_user
 
 st.set_page_config(page_title="Sentiment Dashboard", layout="wide")
 
+# -------------------------------
+# Safe Tweet Fetcher
+# -------------------------------
+def fetch_tweets(query, limit=50):
+    tweets = []
+    try:
+        for i, tweet in enumerate(sntwitter.TwitterSearchScraper(query).get_items()):
+            if i >= limit:
+                break
+            tweets.append(tweet.content)
+    except Exception as e:
+        st.error(f"⚠️ Twitter scraping failed: {e}")
+        return []
+    return tweets
+
+
+# -------------------------------
 # Session state for login
+# -------------------------------
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 if "username" not in st.session_state:
     st.session_state.username = ""
 
+# -------------------------------
 # Login/Register UI
+# -------------------------------
 if not st.session_state.logged_in:
     choice = st.sidebar.selectbox("Menu", ["Login", "Register"])
     st.title("🔐 Sentiment Dashboard Login")
@@ -39,11 +59,14 @@ if not st.session_state.logged_in:
             else:
                 st.error("Username already exists ❌")
 
+# -------------------------------
+# Dashboard Page (After Login)
+# -------------------------------
 else:
     st.sidebar.success(f"Welcome {st.session_state.username} 👋")
     if st.sidebar.button("Logout"):
         st.session_state.logged_in = False
-        st.experimental_rerun()
+        st.rerun()
 
     st.title("📊 Real-Time Sentiment Analysis Dashboard")
 
@@ -53,29 +76,30 @@ else:
 
     if st.button("Analyze Sentiment"):
         analyzer = SentimentIntensityAnalyzer()
-        tweets = []
-        sentiments = {"Positive": 0, "Negative": 0, "Neutral": 0}
+        tweets = fetch_tweets(query, limit)
 
-        for i, tweet in enumerate(sntwitter.TwitterSearchScraper(query).get_items()):
-            if i >= limit:
-                break
-            score = analyzer.polarity_scores(tweet.content)
-            if score["compound"] > 0.05:
-                sentiments["Positive"] += 1
-            elif score["compound"] < -0.05:
-                sentiments["Negative"] += 1
-            else:
-                sentiments["Neutral"] += 1
-            tweets.append(tweet.content)
+        if not tweets:
+            st.warning("No tweets found or scraping failed ❌")
+        else:
+            sentiments = {"Positive": 0, "Negative": 0, "Neutral": 0}
 
-        df = pd.DataFrame(list(sentiments.items()), columns=["Sentiment", "Count"])
+            for text in tweets:
+                score = analyzer.polarity_scores(text)
+                if score["compound"] > 0.05:
+                    sentiments["Positive"] += 1
+                elif score["compound"] < -0.05:
+                    sentiments["Negative"] += 1
+                else:
+                    sentiments["Neutral"] += 1
 
-        # Show bar chart
-        fig, ax = plt.subplots()
-        ax.bar(df["Sentiment"], df["Count"], color=["green", "red", "gray"])
-        st.pyplot(fig)
+            df = pd.DataFrame(list(sentiments.items()), columns=["Sentiment", "Count"])
 
-        # Show tweets
-        st.subheader("📌 Sample Tweets")
-        for t in tweets[:10]:
-            st.write("-", t)
+            # Show bar chart
+            fig, ax = plt.subplots()
+            ax.bar(df["Sentiment"], df["Count"], color=["green", "red", "gray"])
+            st.pyplot(fig)
+
+            # Show tweets
+            st.subheader("📌 Sample Tweets")
+            for t in tweets[:10]:
+                st.write("-", t)
