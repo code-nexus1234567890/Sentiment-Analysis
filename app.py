@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
+import seaborn as sns
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 import snscrape.modules.twitter as sntwitter
 from auth import register_user, login_user
@@ -30,6 +31,7 @@ if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 if "username" not in st.session_state:
     st.session_state.username = ""
+
 
 # -------------------------------
 # Login/Register UI
@@ -71,7 +73,7 @@ else:
     st.title("📊 Real-Time Sentiment Analysis Dashboard")
 
     # Search box
-    query = st.text_input("Enter keyword to search tweets")
+    query = st.text_input("Enter keyword to search tweets (e.g. 'Python', 'AI', 'Modi')")
     limit = st.slider("Number of tweets", 10, 200, 50)
 
     if st.button("Analyze Sentiment"):
@@ -83,42 +85,43 @@ else:
         else:
             sentiments = {"Positive": 0, "Negative": 0, "Neutral": 0}
 
-            labeled_tweets = []  # store tweets with labels
-
+            # Sentiment classification
+            tweet_sentiments = []
             for text in tweets:
                 score = analyzer.polarity_scores(text)
                 if score["compound"] > 0.05:
                     sentiments["Positive"] += 1
-                    labeled_tweets.append(("🟢 Positive", text))
+                    label = "Positive"
                 elif score["compound"] < -0.05:
                     sentiments["Negative"] += 1
-                    labeled_tweets.append(("🔴 Negative", text))
+                    label = "Negative"
                 else:
                     sentiments["Neutral"] += 1
-                    labeled_tweets.append(("⚪ Neutral", text))
+                    label = "Neutral"
+                tweet_sentiments.append({"Tweet": text, "Sentiment": label})
 
-            df = pd.DataFrame(list(sentiments.items()), columns=["Sentiment", "Count"])
+            df_counts = pd.DataFrame(list(sentiments.items()), columns=["Sentiment", "Count"])
+            df_tweets = pd.DataFrame(tweet_sentiments)
 
-            # -------------------------------
-            # Charts Side by Side
-            # -------------------------------
+            # -----------------------
+            # Charts
+            # -----------------------
             col1, col2 = st.columns(2)
 
             with col1:
-                st.subheader("📊 Sentiment Distribution (Bar)")
+                st.subheader("📊 Sentiment Distribution")
                 fig, ax = plt.subplots()
-                ax.bar(df["Sentiment"], df["Count"], color=["green", "red", "gray"])
+                sns.barplot(x="Sentiment", y="Count", data=df_counts, palette={"Positive": "green", "Negative": "red", "Neutral": "gray"}, ax=ax)
                 st.pyplot(fig)
 
             with col2:
-                st.subheader("🥧 Sentiment Share (Pie)")
-                fig2, ax2 = plt.subplots()
-                ax2.pie(df["Count"], labels=df["Sentiment"], autopct="%1.1f%%", colors=["green", "red", "gray"])
-                st.pyplot(fig2)
+                st.subheader("🔄 Sentiment Share (%)")
+                fig, ax = plt.subplots()
+                ax.pie(df_counts["Count"], labels=df_counts["Sentiment"], autopct="%1.1f%%", colors=["green", "red", "gray"], startangle=90)
+                st.pyplot(fig)
 
-            # -------------------------------
-            # Show Tweets with Labels
-            # -------------------------------
-            st.subheader("📌 Sample Tweets")
-            for label, t in labeled_tweets[:10]:
-                st.write(f"{label}: {t}")
+            # -----------------------
+            # Tweets Table
+            # -----------------------
+            st.subheader("📌 Analyzed Tweets")
+            st.dataframe(df_tweets.head(20), use_container_width=True)
