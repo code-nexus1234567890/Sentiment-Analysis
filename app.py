@@ -3,26 +3,69 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
-import snscrape.modules.twitter as sntwitter
+import tweepy
+from pymongo import MongoClient
 from auth import register_user, login_user
 
 st.set_page_config(page_title="Sentiment Dashboard", layout="wide")
 
 # -------------------------------
-# Safe Tweet Fetcher
+# Twitter API & MongoDB setup
+# -------------------------------
+# Twitter Bearer Token
+BEARER_TOKEN = "AAAAAAAAAAAAAAAAAAAAADuh3gEAAAAAeztLRWzvjnfxWcYn4JGTty%2BBTfI%3DjGbz2dm9mA1sQ2Qz3pfhtQ3ci8VJVJZ8ub4wHPuuPn7KRIDX89"
+twitter_client = tweepy.Client(bearer_token=BEARER_TOKEN)
+
+# MongoDB setup
+mongo_client = MongoClient("mongodb+srv://ayushmishra180904:ayush2004@cluster0.ljeo5h4.mongodb.net/?retryWrites=true&w=majority")
+db = mongo_client["sentimentDB"]
+tweets_collection = db["tweets"]
+
+# -------------------------------
+# Safe Tweet Fetcher using Twitter API with pagination
 # -------------------------------
 def fetch_tweets(query, limit=50):
-    tweets = []
+    tweets_list = []
     try:
-        for i, tweet in enumerate(sntwitter.TwitterSearchScraper(query).get_items()):
-            if i >= limit:
-                break
-            tweets.append(tweet.content)
-    except Exception as e:
-        st.error(f"⚠️ Twitter scraping failed: {e}")
-        return []
-    return tweets
+        remaining = limit
+        next_token = None
 
+        while remaining > 0:
+            fetch_count = min(remaining, 100)  # Max 100 tweets per request
+            response = twitter_client.search_recent_tweets(
+                query=query + " -is:retweet",
+                max_results=fetch_count,
+                tweet_fields=['created_at','author_id','public_metrics','text'],
+                next_token=next_token
+            )
+
+            if response.data:
+                for tweet in response.data:
+                    tweets_list.append(tweet.text)
+                    # Store in MongoDB
+                    tweet_data = {
+                        "id": tweet.id,
+                        "author_id": tweet.author_id,
+                        "created_at": tweet.created_at,
+                        "text": tweet.text,
+                        "metrics": tweet.public_metrics
+                    }
+                    tweets_collection.insert_one(tweet_data)
+
+                remaining -= len(response.data)
+                next_token = getattr(response.meta, 'next_token', None)
+                if not next_token:
+                    break
+            else:
+                break
+
+        if not tweets_list:
+            st.warning("No tweets found for this query ❌")
+
+    except Exception as e:
+        st.error(f"⚠️ Error fetching tweets: {e}")
+
+    return tweets_list
 
 # -------------------------------
 # Session state for login
@@ -31,7 +74,6 @@ if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 if "username" not in st.session_state:
     st.session_state.username = ""
-
 
 # -------------------------------
 # Login/Register UI
@@ -81,7 +123,7 @@ else:
         tweets = fetch_tweets(query, limit)
 
         if not tweets:
-            st.warning("No tweets found or scraping failed ❌")
+            st.warning("No tweets found or fetching failed ❌")
         else:
             sentiments = {"Positive": 0, "Negative": 0, "Neutral": 0}
 
@@ -111,13 +153,25 @@ else:
             with col1:
                 st.subheader("📊 Sentiment Distribution")
                 fig, ax = plt.subplots()
-                sns.barplot(x="Sentiment", y="Count", data=df_counts, palette={"Positive": "green", "Negative": "red", "Neutral": "gray"}, ax=ax)
+                sns.barplot(
+                    x="Sentiment",
+                    y="Count",
+                    data=df_counts,
+                    palette={"Positive": "green", "Negative": "red", "Neutral": "gray"},
+                    ax=ax
+                )
                 st.pyplot(fig)
 
             with col2:
                 st.subheader("🔄 Sentiment Share (%)")
                 fig, ax = plt.subplots()
-                ax.pie(df_counts["Count"], labels=df_counts["Sentiment"], autopct="%1.1f%%", colors=["green", "red", "gray"], startangle=90)
+                ax.pie(
+                    df_counts["Count"],
+                    labels=df_counts["Sentiment"],
+                    autopct="%1.1f%%",
+                    colors=["green", "red", "gray"],
+                    startangle=90
+                )
                 st.pyplot(fig)
 
             # -----------------------
