@@ -1,14 +1,13 @@
 import pymongo
 from passlib.hash import bcrypt
 
-# 🔗 MongoDB connection
-# Encode @ as %40 in password
-MONGO_URI = "mongodb+srv://ayushmishra180904:ayush%402004@cluster0.ljeo5h4.mongodb.net/?retryWrites=true&w=majority"
+# 🔗 MongoDB connection (no special chars now)
+MONGO_URI = "mongodb+srv://ayushmishra180904:ayush2004@cluster0.ljeo5h4.mongodb.net/?retryWrites=true&w=majority"
 
 try:
     # Connect to MongoDB
     client = pymongo.MongoClient(MONGO_URI)
-    db = client["sentimentDB"]   # use your DB here
+    db = client["sentimentDB"]   # Database name
     users_collection = db["users"]
     print("✅ Connected to MongoDB successfully!")
 except Exception as e:
@@ -37,9 +36,9 @@ def login_user(username, password):
 
 
 if __name__ == "__main__":
-    # Test block (run only manually)
+    # Test block
     username = "ayush"
-    password = "ayush@2004"
+    password = "ayush2004"
 
     registered = register_user(username, password)
     print("Registering user:", "Success ✅" if registered else "Already exists ⚠️")
