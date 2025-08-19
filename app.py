@@ -83,23 +83,42 @@ else:
         else:
             sentiments = {"Positive": 0, "Negative": 0, "Neutral": 0}
 
+            labeled_tweets = []  # store tweets with labels
+
             for text in tweets:
                 score = analyzer.polarity_scores(text)
                 if score["compound"] > 0.05:
                     sentiments["Positive"] += 1
+                    labeled_tweets.append(("🟢 Positive", text))
                 elif score["compound"] < -0.05:
                     sentiments["Negative"] += 1
+                    labeled_tweets.append(("🔴 Negative", text))
                 else:
                     sentiments["Neutral"] += 1
+                    labeled_tweets.append(("⚪ Neutral", text))
 
             df = pd.DataFrame(list(sentiments.items()), columns=["Sentiment", "Count"])
 
-            # Show bar chart
-            fig, ax = plt.subplots()
-            ax.bar(df["Sentiment"], df["Count"], color=["green", "red", "gray"])
-            st.pyplot(fig)
+            # -------------------------------
+            # Charts Side by Side
+            # -------------------------------
+            col1, col2 = st.columns(2)
 
-            # Show tweets
+            with col1:
+                st.subheader("📊 Sentiment Distribution (Bar)")
+                fig, ax = plt.subplots()
+                ax.bar(df["Sentiment"], df["Count"], color=["green", "red", "gray"])
+                st.pyplot(fig)
+
+            with col2:
+                st.subheader("🥧 Sentiment Share (Pie)")
+                fig2, ax2 = plt.subplots()
+                ax2.pie(df["Count"], labels=df["Sentiment"], autopct="%1.1f%%", colors=["green", "red", "gray"])
+                st.pyplot(fig2)
+
+            # -------------------------------
+            # Show Tweets with Labels
+            # -------------------------------
             st.subheader("📌 Sample Tweets")
-            for t in tweets[:10]:
-                st.write("-", t)
+            for label, t in labeled_tweets[:10]:
+                st.write(f"{label}: {t}")
