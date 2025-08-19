@@ -28,3 +28,8 @@ def login_user(username, password):
     if user and bcrypt.verify(password, user["password"]):
         return True
     return False
+
+
+if __name__ == "__main__":
+    print("Registering:", register_user("testuser", "testpass"))
+    print("Logging in:", login_user("testuser", "testpass"))
