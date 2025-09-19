@@ -17,7 +17,7 @@ BEARER_TOKEN = "AAAAAAAAAAAAAAAAAAAAADuh3gEAAAAAeztLRWzvjnfxWcYn4JGTty%2BBTfI%3D
 twitter_client = tweepy.Client(bearer_token=BEARER_TOKEN)
 
 # MongoDB setup
-mongo_client = MongoClient("mongodb+srv://ayushmishra18904_db_user:C1HS4K825qSAJQNe@cluster0.chp9js4.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
+mongo_client = MongoClient("mongodb+srv://ayushmishra18904_db_user:C1HS4K825qSAJQNe@cluster0.chp9js4.mongodb.net/sentimentDB?retryWrites=true&w=majority&appName=Cluster0")
 db = mongo_client["sentimentDB"]
 tweets_collection = db["tweets"]
 
