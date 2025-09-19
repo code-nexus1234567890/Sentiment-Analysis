@@ -6,6 +6,8 @@ from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 import tweepy
 from pymongo import MongoClient
 from auth import register_user, login_user
+import snscrape.modules.twitter as sntwitter
+
 
 st.set_page_config(page_title="Sentiment Dashboard", layout="wide")
 
@@ -24,49 +26,71 @@ tweets_collection = db["tweets"]
 # -------------------------------
 # Safe Tweet Fetcher using Twitter API with pagination
 # -------------------------------
+# def fetch_tweets(query, limit=50):
+#     tweets_list = []
+#     try:
+#         remaining = limit
+#         next_token = None
+
+#         while remaining > 0:
+#             fetch_count = min(remaining, 100)  # Max 100 tweets per request
+#             response = twitter_client.search_recent_tweets(
+#                 query=query + " -is:retweet",
+#                 max_results=fetch_count,
+#                 tweet_fields=['created_at','author_id','public_metrics','text'],
+#                 next_token=next_token
+#             )
+
+#             if response.data:
+#                 for tweet in response.data:
+#                     tweets_list.append(tweet.text)
+#                     # Store in MongoDB
+#                     tweet_data = {
+#                         "id": tweet.id,
+#                         "author_id": tweet.author_id,
+#                         "created_at": tweet.created_at,
+#                         "text": tweet.text,
+#                         "metrics": tweet.public_metrics
+#                     }
+#                     tweets_collection.insert_one(tweet_data)
+
+#                 remaining -= len(response.data)
+#                 next_token = getattr(response.meta, 'next_token', None)
+#                 if not next_token:
+#                     break
+#             else:
+#                 break
+
+#         if not tweets_list:
+#             st.warning("No tweets found for this query ❌")
+
+#     except Exception as e:
+#         st.error(f"⚠️ Error fetching tweets: {e}")
+
+#     return tweets_list
 def fetch_tweets(query, limit=50):
     tweets_list = []
     try:
-        remaining = limit
-        next_token = None
-
-        while remaining > 0:
-            fetch_count = min(remaining, 100)  # Max 100 tweets per request
-            response = twitter_client.search_recent_tweets(
-                query=query + " -is:retweet",
-                max_results=fetch_count,
-                tweet_fields=['created_at','author_id','public_metrics','text'],
-                next_token=next_token
-            )
-
-            if response.data:
-                for tweet in response.data:
-                    tweets_list.append(tweet.text)
-                    # Store in MongoDB
-                    tweet_data = {
-                        "id": tweet.id,
-                        "author_id": tweet.author_id,
-                        "created_at": tweet.created_at,
-                        "text": tweet.text,
-                        "metrics": tweet.public_metrics
-                    }
-                    tweets_collection.insert_one(tweet_data)
-
-                remaining -= len(response.data)
-                next_token = getattr(response.meta, 'next_token', None)
-                if not next_token:
-                    break
-            else:
+        for i, tweet in enumerate(sntwitter.TwitterSearchScraper(f"{query} -is:retweet").get_items()):
+            if i >= limit:
                 break
+            tweets_list.append(tweet.content)
 
-        if not tweets_list:
-            st.warning("No tweets found for this query ❌")
-
+            # Store in MongoDB
+            tweet_data = {
+                "id": tweet.id,
+                "username": tweet.user.username,
+                "created_at": tweet.date,
+                "text": tweet.content
+            }
+            tweets_collection.insert_one(tweet_data)
     except Exception as e:
-        st.error(f"⚠️ Error fetching tweets: {e}")
+        st.error(f"⚠️ Error scraping tweets: {e}")
+
+    if not tweets_list:
+        st.warning("No tweets found for this query ❌")
 
     return tweets_list
-
 # -------------------------------
 # Session state for login
 # -------------------------------
