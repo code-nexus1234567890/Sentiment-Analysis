@@ -2,7 +2,7 @@ import pymongo
 from passlib.hash import bcrypt
 
 # 🔗 MongoDB connection (no special chars now)
-MONGO_URI = "mongodb+srv://ayushmishra180904:ayush2004@cluster0.ljeo5h4.mongodb.net/?retryWrites=true&w=majority"
+MONGO_URI = "mongodb+srv://ayushmishra18904_db_user:C1HS4K825qSAJQNe@cluster0.chp9js4.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
 
 try:
     # Connect to MongoDB
