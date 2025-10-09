@@ -31,8 +31,16 @@ def register_user(username, password):
 def login_user(username, password):
     # Find user by username
     user = users_collection.find_one({"username": username})
-    if user and bcrypt.verify(password, user["password"]):
-        return True
+    if not user:
+        return False
+
+    try:
+        if bcrypt.verify(password, user["password"]):
+            return True
+    except ValueError:
+        print("⚠️ Invalid password hash found in database for user:", username)
+        return False
+
     return False
 
 
