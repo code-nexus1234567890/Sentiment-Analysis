@@ -1,9 +1,8 @@
 import pymongo
-from passlib.hash import bcrypt
+from passlib.hash import bcrypt_sha256 as bcrypt  # ✅ Stable drop-in replacement for bcrypt
 
-# 🔗 MongoDB connection (no special chars now)
+# 🔗 MongoDB connection
 MONGO_URI = "mongodb+srv://ayushmishra18904_db_user:C1HS4K825qSAJQNe@cluster0.chp9js4.mongodb.net/sentimentDB?retryWrites=true&w=majority&appName=Cluster0"
-# MONGO_URI = "mongodb+srv://ayushmishra18904_db_user:<db_password>@cluster0.chp9js4.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
 
 try:
     # Connect to MongoDB
@@ -20,11 +19,15 @@ def register_user(username, password):
     # Check if username already exists
     if users_collection.find_one({"username": username}):
         return False
-    
-    # Hash password before saving
-    hashed = bcrypt.hash(password)
-    users_collection.insert_one({"username": username, "password": hashed})
-    return True
+
+    try:
+        # Hash password before saving
+        hashed = bcrypt.hash(password)
+        users_collection.insert_one({"username": username, "password": hashed})
+        return True
+    except Exception as e:
+        print(f"⚠️ Error hashing password for {username}:", e)
+        return False
 
 
 # Verify login
@@ -39,7 +42,8 @@ def login_user(username, password):
             return True
     except ValueError:
         print("⚠️ Invalid password hash found in database for user:", username)
-        return False
+    except Exception as e:
+        print("⚠️ Error verifying password:", e)
 
     return False
 
