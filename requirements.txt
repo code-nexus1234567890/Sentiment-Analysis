@@ -6,5 +6,9 @@ passlib[bcrypt]
 pymongo[srv]
 dnspython
 snscrape==0.4.3.20220106
-tweepy
+# tweepy
+seaborn
+# tweepy
+
+praw
 seaborn

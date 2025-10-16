@@ -1,42 +1,51 @@
+import sys
+sys.stdout.reconfigure(encoding='utf-8')
 import pymongo
 from passlib.hash import bcrypt
 
-# 🔗 MongoDB connection (no special chars now)
-MONGO_URI = "mongodb+srv://ayushmishra180904:ayush2004@cluster0.ljeo5h4.mongodb.net/?retryWrites=true&w=majority"
+# -------------------------------
+# 🔗 MongoDB Atlas connection
+# -------------------------------
+MONGO_URI = "mongodb+srv://2k23it2a2310456_db_user:rUkqPZKhNTNDYE5T@sentimentanalysis.4yl8yfe.mongodb.net/SentimentAnalysis?retryWrites=true&w=majority&appName=SentimentAnalysis"
 
 try:
-    # Connect to MongoDB
+    # Connect to MongoDB Atlas
     client = pymongo.MongoClient(MONGO_URI)
-    db = client["sentimentDB"]   # Database name
-    users_collection = db["users"]
-    print("✅ Connected to MongoDB successfully!")
+    db = client["SentimentAnalysis"]   # Database name on Atlas
+    users_collection = db["users"]     # Collection name
+    print("✅ Connected to MongoDB Atlas successfully!")
 except Exception as e:
-    print("❌ MongoDB connection failed:", e)
+    print("❌ MongoDB Atlas connection failed:", e)
 
 
-# Register user
+# -------------------------------
+# 👤 Register user
+# -------------------------------
 def register_user(username, password):
     # Check if username already exists
     if users_collection.find_one({"username": username}):
         return False
     
-    # Hash password before saving
+    # Hash the password
     hashed = bcrypt.hash(password)
     users_collection.insert_one({"username": username, "password": hashed})
     return True
 
 
-# Verify login
+# -------------------------------
+# 🔐 Verify login
+# -------------------------------
 def login_user(username, password):
-    # Find user by username
     user = users_collection.find_one({"username": username})
     if user and bcrypt.verify(password, user["password"]):
         return True
     return False
 
 
+# -------------------------------
+# 🧪 Test Block
+# -------------------------------
 if __name__ == "__main__":
-    # Test block
     username = "ayush"
     password = "ayush2004"
 
@@ -48,3 +57,4 @@ if __name__ == "__main__":
 
     login_fail = login_user(username, "wrongpass")
     print("Login with wrong password:", login_fail)
+
