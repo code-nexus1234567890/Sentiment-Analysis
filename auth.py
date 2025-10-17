@@ -3,6 +3,9 @@ sys.stdout.reconfigure(encoding='utf-8')
 import pymongo
 from passlib.hash import bcrypt
 
+# 🧩 Force passlib to use its pure-Python backend (avoids C extension crash)
+bcrypt.set_backend("builtin")
+
 # -------------------------------
 # 🔗 MongoDB Atlas connection
 # -------------------------------
@@ -26,7 +29,7 @@ def register_user(username, password):
     if users_collection.find_one({"username": username}):
         return False
     
-    # Hash the password
+    # Hash the password safely
     hashed = bcrypt.hash(password)
     users_collection.insert_one({"username": username, "password": hashed})
     return True
@@ -57,4 +60,3 @@ if __name__ == "__main__":
 
     login_fail = login_user(username, "wrongpass")
     print("Login with wrong password:", login_fail)
-
