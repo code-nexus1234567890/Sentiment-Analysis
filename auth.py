@@ -1,7 +1,7 @@
 import sys
 sys.stdout.reconfigure(encoding='utf-8')
 import pymongo
-from passlib.hash import bcrypt
+import bcrypt   # native bcrypt, not passlib
 
 # -------------------------------
 # 🔗 MongoDB Atlas connection
@@ -9,10 +9,9 @@ from passlib.hash import bcrypt
 MONGO_URI = "mongodb+srv://2k23it2a2310456_db_user:rUkqPZKhNTNDYE5T@sentimentanalysis.4yl8yfe.mongodb.net/SentimentAnalysis?retryWrites=true&w=majority&appName=SentimentAnalysis"
 
 try:
-    # Connect to MongoDB Atlas
     client = pymongo.MongoClient(MONGO_URI)
-    db = client["SentimentAnalysis"]   # Database name on Atlas
-    users_collection = db["users"]     # Collection name
+    db = client["SentimentAnalysis"]
+    Users_collection = db["Users"]
     print("✅ Connected to MongoDB Atlas successfully!")
 except Exception as e:
     print("❌ MongoDB Atlas connection failed:", e)
@@ -23,12 +22,15 @@ except Exception as e:
 # -------------------------------
 def register_user(username, password):
     # Check if username already exists
-    if users_collection.find_one({"username": username}):
+    if Users_collection.find_one({"username": username}):
         return False
-    
-    # Hash the password
-    hashed = bcrypt.hash(password)
-    users_collection.insert_one({"username": username, "password": hashed})
+
+    # Hash the password using bcrypt
+    hashed = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt())
+    Users_collection.insert_one({
+        "username": username,
+        "password": hashed.decode("utf-8")  # store as string
+    })
     return True
 
 
@@ -36,10 +38,12 @@ def register_user(username, password):
 # 🔐 Verify login
 # -------------------------------
 def login_user(username, password):
-    user = users_collection.find_one({"username": username})
-    if user and bcrypt.verify(password, user["password"]):
-        return True
-    return False
+    user = Users_collection.find_one({"username": username})
+    if not user:
+        return False
+
+    stored_hash = user["password"].encode("utf-8")
+    return bcrypt.checkpw(password.encode("utf-8"), stored_hash)
 
 
 # -------------------------------
@@ -57,4 +61,3 @@ if __name__ == "__main__":
 
     login_fail = login_user(username, "wrongpass")
     print("Login with wrong password:", login_fail)
-

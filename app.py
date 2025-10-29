@@ -27,10 +27,11 @@ except Exception as e:
     st.error(f"⚠️ Failed to initialize Reddit client: {e}")
     reddit = None
 
+
 # -------------------------------
-# Function: Fetch Reddit posts
+# Function: Fetch Reddit posts (SEARCH MODE)
 # -------------------------------
-def fetch_reddit_posts(subreddit_name, limit=50):
+def fetch_reddit_posts(query, limit=50):
     posts_list = []
 
     if reddit is None:
@@ -38,8 +39,8 @@ def fetch_reddit_posts(subreddit_name, limit=50):
         return posts_list
 
     try:
-        subreddit = reddit.subreddit(subreddit_name)
-        for post in subreddit.hot(limit=limit):
+        # Search Reddit across all subreddits
+        for post in reddit.subreddit("all").search(query, limit=limit):
             posts_list.append(post.title)
             post_data = {
                 "id": post.id,
@@ -54,12 +55,13 @@ def fetch_reddit_posts(subreddit_name, limit=50):
             posts_collection.insert_one(post_data)
 
         if not posts_list:
-            st.warning("No posts found for this subreddit ❌")
+            st.warning("No posts found for this search term ❌")
 
     except Exception as e:
         st.error(f"⚠️ Error fetching Reddit posts: {e}")
 
     return posts_list
+
 
 # -------------------------------
 # Session state
@@ -68,6 +70,7 @@ if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 if "username" not in st.session_state:
     st.session_state.username = ""
+
 
 # -------------------------------
 # Login/Register UI
@@ -84,7 +87,7 @@ if not st.session_state.logged_in:
                 st.session_state.logged_in = True
                 st.session_state.username = username
                 st.success("Login successful ✅")
-                st.experimental_rerun()
+                st.rerun()
             else:
                 st.error("Invalid credentials ❌")
 
@@ -104,20 +107,20 @@ else:
     st.sidebar.success(f"Welcome {st.session_state.username} 👋")
     if st.sidebar.button("Logout"):
         st.session_state.logged_in = False
-        st.experimental_rerun()
+        st.rerun()
 
-    st.title("📊 Real-Time Reddit Sentiment Analysis Dashboard")
+    st.title("📊 Real-Time Sentiment Analysis Dashboard")
 
     # Inputs
-    subreddit_name = st.text_input("Enter subreddit name (e.g., 'python', 'technology', 'india')")
+    query = st.text_input("Enter a topic or keyword (e.g., 'Virat Kohli', 'AI', 'Cricket')")
     limit = st.slider("Number of posts", 10, 200, 50)
 
     if st.button("Analyze Sentiment"):
-        if not subreddit_name.strip():
-            st.warning("Please enter a subreddit name ❌")
+        if not query.strip():
+            st.warning("Please enter a keyword ❌")
         else:
             analyzer = SentimentIntensityAnalyzer()
-            posts = fetch_reddit_posts(subreddit_name, limit)
+            posts = fetch_reddit_posts(query, limit)
 
             if not posts:
                 st.warning("No posts found or fetching failed ❌")
@@ -175,5 +178,5 @@ else:
                 # -----------------------
                 # Posts Table
                 # -----------------------
-                st.subheader("📌 Analyzed Reddit Posts")
-                st.dataframe(df_posts.head(20), use_container_width=True)
+                st.subheader("📌 Analyzed  Posts")
+                st.dataframe(df_posts.head(29), use_container_width=True)
