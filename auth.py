@@ -2,12 +2,8 @@ import sys
 sys.stdout.reconfigure(encoding='utf-8')
 import pymongo
 import bcrypt   # native bcrypt, not passlib
-
-# -------------------------------
-# 🔗 MongoDB Atlas connection
-# -------------------------------
+# MongoDB Atlas connection
 MONGO_URI = "mongodb+srv://2k23it2a2310456_db_user:rUkqPZKhNTNDYE5T@sentimentanalysis.4yl8yfe.mongodb.net/SentimentAnalysis?retryWrites=true&w=majority&appName=SentimentAnalysis"
-
 try:
     client = pymongo.MongoClient(MONGO_URI)
     db = client["SentimentAnalysis"]
@@ -15,16 +11,12 @@ try:
     print("✅ Connected to MongoDB Atlas successfully!")
 except Exception as e:
     print("❌ MongoDB Atlas connection failed:", e)
+#  Register user
 
-
-# -------------------------------
-# 👤 Register user
-# -------------------------------
 def register_user(username, password):
     # Check if username already exists
     if Users_collection.find_one({"username": username}):
         return False
-
     # Hash the password using bcrypt
     hashed = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt())
     Users_collection.insert_one({
@@ -32,11 +24,7 @@ def register_user(username, password):
         "password": hashed.decode("utf-8")  # store as string
     })
     return True
-
-
-# -------------------------------
-# 🔐 Verify login
-# -------------------------------
+# Verify login
 def login_user(username, password):
     user = Users_collection.find_one({"username": username})
     if not user:
@@ -45,10 +33,7 @@ def login_user(username, password):
     stored_hash = user["password"].encode("utf-8")
     return bcrypt.checkpw(password.encode("utf-8"), stored_hash)
 
-
-# -------------------------------
-# 🧪 Test Block
-# -------------------------------
+# Test Block
 if __name__ == "__main__":
     username = "ayush"
     password = "ayush2004"
