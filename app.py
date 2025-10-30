@@ -6,12 +6,8 @@ from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 from pymongo import MongoClient
 from auth import register_user, login_user
 from reddit_client import get_reddit
-
 st.set_page_config(page_title="Sentiment Dashboard", layout="wide")
-
-# -------------------------------
 # MongoDB setup
-# -------------------------------
 mongo_client = MongoClient(
     "mongodb+srv://ayushmishra180904:ayush2004@cluster0.ljeo5h4.mongodb.net/?retryWrites=true&w=majority"
 )
@@ -26,11 +22,7 @@ try:
 except Exception as e:
     st.error(f"⚠️ Failed to initialize Reddit client: {e}")
     reddit = None
-
-
-# -------------------------------
 # Function: Fetch Reddit posts (SEARCH MODE)
-# -------------------------------
 def fetch_reddit_posts(query, limit=50):
     posts_list = []
 
@@ -61,20 +53,12 @@ def fetch_reddit_posts(query, limit=50):
         st.error(f"⚠️ Error fetching Reddit posts: {e}")
 
     return posts_list
-
-
-# -------------------------------
 # Session state
-# -------------------------------
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 if "username" not in st.session_state:
     st.session_state.username = ""
-
-
-# -------------------------------
 # Login/Register UI
-# -------------------------------
 if not st.session_state.logged_in:
     choice = st.sidebar.selectbox("Menu", ["Login", "Register"])
     st.title("🔐 Sentiment Dashboard Login")
@@ -99,10 +83,7 @@ if not st.session_state.logged_in:
                 st.success("Account created 🎉, please login.")
             else:
                 st.error("Username already exists ❌")
-
-# -------------------------------
 # Dashboard Page
-# -------------------------------
 else:
     st.sidebar.success(f"Welcome {st.session_state.username} 👋")
     if st.sidebar.button("Logout"):
@@ -146,9 +127,7 @@ else:
                 df_counts = pd.DataFrame(list(sentiments.items()), columns=["Sentiment", "Count"])
                 df_posts = pd.DataFrame(post_sentiments)
 
-                # -----------------------
                 # Charts
-                # -----------------------
                 col1, col2 = st.columns(2)
 
                 with col1:
@@ -175,8 +154,6 @@ else:
                     )
                     st.pyplot(fig)
 
-                # -----------------------
                 # Posts Table
-                # -----------------------
                 st.subheader("📌 Analyzed  Posts")
                 st.dataframe(df_posts.head(29), use_container_width=True)
