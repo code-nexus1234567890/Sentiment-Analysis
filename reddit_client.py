@@ -15,7 +15,7 @@ import praw  # Reddit API wrapper
 def get_reddit():
     """
     Returns a Reddit instance using PRAW.
-    Make sure to replace the placeholders with your credentials.
+    Credentials.
     """
     reddit = praw.Reddit(
         client_id="p3GEXrFNaClvkBnX-LK7FA",
